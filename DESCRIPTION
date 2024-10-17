@@ -27,20 +27,21 @@ Description: A collection of functions used to create the UMass-trends_ensemble,
 License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.2
 Imports:
     cli,
     dplyr,
     purrr,
     rlang,
     simplets,
-    tibble
+    tibble,
+    tidyr
 Remotes: 
     reichlab/simplets
 Suggests: 
     car,
     fabletools,
     feasts,
-    testthat (>= 3.2.1),
-    tidyr
+    lubridate,
+    testthat (>= 3.2.1)
 Config/testthat/edition: 3
