@@ -9,7 +9,7 @@
 #'   location
 #' @param reference_date string of the reference date for the forecasts, i.e.
 #'   the date relative to which the targets are defined (usually Saturday for
-#'   weekly targets)
+#'   weekly targets). Must be in the ymd format, with yyyy-mm-dd format recommended.
 #' @param temporal_resolution 'daily' or 'weekly'; specifies timescale of
 #'   `target_ts` and `horizons`
 #' @param horizons numeric vector of prediction horizons relative to
@@ -62,6 +62,13 @@ fit_baselines_one_location <- function(model_variations,
                                        round_predictions = FALSE,
                                        seed = NULL) {
 
+  if (length(reference_date) > 1) {
+    cli::cli_abort("only one {.arg reference_date} may be provided")
+  } else {
+    reference_date <- reference_date |> # date to which horizons are relative
+      validate_ymd_date(arg_name = "reference_date")
+  }
+
   valid_temp_res <- c("daily", "weekly")
   if (!(temporal_resolution %in% valid_temp_res && length(temporal_resolution)) == 1) {
     cli::cli_abort("{.arg temporal_resolution} must be only one of {.val valid_temp_res}")
@@ -76,7 +83,6 @@ fit_baselines_one_location <- function(model_variations,
   }
 
   # figure out horizons to forecast
-  reference_date <- lubridate::ymd(reference_date) # date to which horizons are relative
   last_data_date <- max(target_ts$time_index) # last day of target data
   actual_target_dates <- reference_date + ts_temp_res * horizons
   effective_horizons <- as.integer(actual_target_dates - last_data_date) / ts_temp_res
@@ -84,18 +90,19 @@ fit_baselines_one_location <- function(model_variations,
   h_adjustments <- min(effective_horizons) - 1
 
   # get predictions for all model_variations
-  predictions <- purrr::pmap_dfr( #tibble, each 1x1 row contains predictions for 1 model
-    model_variations,
-    get_baseline_predictions,
-    target_ts = target_ts,
-    effective_horizons = horizons_to_forecast,
-    origin = ifelse(temporal_resolution == "weekly", "obs", "median"),
-    n_sim = 100000,
-    quantile_levels = quantile_levels,
-    n_samples = n_samples,
-    round_predictions = round_predictions,
-    seed = seed
-  )
+  predictions <- model_variations |>
+    purrr::pmap( #tibble, each 1x1 row contains predictions for 1 model
+      get_baseline_predictions,
+      target_ts = target_ts,
+      effective_horizons = horizons_to_forecast,
+      origin = ifelse(temporal_resolution == "weekly", "obs", "median"),
+      n_sim = 100000,
+      quantile_levels = quantile_levels,
+      n_samples = n_samples,
+      round_predictions = round_predictions,
+      seed = seed
+    ) |>
+    purrr::list_rbind()
 
   # extract forecasts
   extracted_outputs <-
@@ -145,17 +152,12 @@ fit_baselines_one_location <- function(model_variations,
       dplyr::mutate(
         value = ifelse(is.na(.data[["value"]]), .data[["observation"]], .data[["value"]])
       )
-    if (max(actual_target_dates) <= last_data_date) {
-      cli::cli_warn(
-        "all requested forecasts are for a time index within the provided {.arg target_ts},
-          replacing overlapping forecasts with {.val {length(horizons)}} target observations"
-      )
-    } else {
-      cli::cli_warn(
-        "forecasts requested for a time index within the provided {.arg target_ts},
-          replacing overlapping forecasts with {.val {abs(h_adjustments)}} target observations"
-      )
-    }
+
+    cli::cli_warn(
+      "forecasts requested for a time index within the provided {.arg target_ts},
+        replacing overlapping forecasts for {.val {abs(h_adjustments)}} horizons
+        with observed values"
+    )
   }
 
   model_outputs |>

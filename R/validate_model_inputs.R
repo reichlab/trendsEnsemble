@@ -130,3 +130,26 @@ validate_integer <- function(int, arg_name) {
     cli::cli_abort("{.arg {arg_name}} must be a single, non-negative integer value.")
   }
 }
+
+
+#' Validate value to be converted into a ymd date
+#'
+#' @param date value to be converted into a ymd date
+#' @param arg_name character string name of the argument being validated to be
+#'   printed in the error message (generally the name of the `date` object)
+#'
+#' @return a validated Date object (or vector) in the ymd format
+#'
+#' @noRd
+validate_ymd_date <- function(date, arg_name) {
+  if (is.null(date)) {
+    cli::cli_abort("{.arg {arg_name}} is missing")
+  }
+
+  ymd_date <- lubridate::ymd(date, quiet = TRUE)
+  if (is.na(ymd_date)) {
+    cli::cli_abort("{.arg {arg_name}} could not be correctly parsed. Please use the ymd format")
+  } else {
+    ymd_date
+  }
+}
