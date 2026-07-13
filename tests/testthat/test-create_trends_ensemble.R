@@ -201,7 +201,7 @@ test_that("ensemble is correctly calculated", {
     hubEnsembles::linear_pool(
       model_id = "UMass-trends_ensemble",
       compound_taskid_set = c("location", "reference_date", "target"),
-      derived_tasks = "target_end_date",
+      derived_task_ids = "target_end_date",
       n_output_samples = 1000
     ) |>
     dplyr::mutate(
@@ -230,7 +230,7 @@ test_that("ensemble is correctly calculated", {
     hubEnsembles::linear_pool(
       model_id = "UMass-trends_ensemble",
       compound_taskid_set = c("location", "reference_date", "target"),
-      derived_tasks = "target_end_date",
+      derived_task_ids = "target_end_date",
       n_output_samples = 1000
     ) |>
     dplyr::mutate(
